@@ -4,6 +4,8 @@ import {
   getAuth,
   onAuthStateChanged,
   GoogleAuthProvider,
+  signOut,
+  getRedirectResult,
   signInWithPopup,
   signInWithRedirect,
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
@@ -36,52 +38,51 @@ const googleProvider = new GoogleAuthProvider();
 const wall = document.getElementById("wall");
 const input = document.getElementById("input");
 const userArea = document.getElementById("userArea");
+const loginBtn = document.getElementById("googleLoginBtn");
+const logoutBtn = document.getElementById("signOutBtn");
 let isListening = false;
 let authReadyResolve = null;
 const authReady = new Promise((resolve) => {
   authReadyResolve = resolve;
 });
 
-function createGoogleLoginButton() {
-  if (document.getElementById("googleLoginBtn")) return;
-
-  const button = document.createElement("button");
-  button.id = "googleLoginBtn";
-  button.type = "button";
-  button.textContent = "Google 로그인";
-  button.style.cssText =
-    "margin: 8px 0 12px; border: none; border-radius: 10px; padding: 8px 12px; background: #1f6fff; color: #fff; font-weight: 700; cursor: pointer;";
-
-  button.addEventListener("click", async () => {
-    try {
-      setStatus("Google 로그인 중...");
-      await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      if (error.code === "auth/popup-blocked" || error.code === "auth/popup-closed-by-user") {
-        try {
-          await signInWithRedirect(auth, googleProvider);
-        } catch (redirectErr) {
-          console.error("Google 리다이렉트 로그인 실패:", redirectErr);
-          setStatus(`로그인 실패 (${redirectErr.code || redirectErr.message})`);
-        }
-        return;
-      }
-
-      console.error("Google 로그인 실패:", error);
-      setStatus(`로그인 실패 (${error.code || error.message})`);
-    }
-  });
-
-  userArea?.insertAdjacentElement("afterend", button);
-}
-
-function removeGoogleLoginButton() {
-  const button = document.getElementById("googleLoginBtn");
-  if (button) button.remove();
-}
-
 function setStatus(message) {
   if (userArea) userArea.textContent = message;
+}
+
+function updateAuthUi(isSignedIn) {
+  if (loginBtn) loginBtn.style.display = isSignedIn ? "none" : "inline-flex";
+  if (logoutBtn) logoutBtn.style.display = isSignedIn ? "inline-flex" : "none";
+}
+
+async function handleGoogleLogin() {
+  try {
+    setStatus("Google 로그인 중...");
+    await signInWithPopup(auth, googleProvider);
+  } catch (error) {
+    if (error.code === "auth/popup-blocked" || error.code === "auth/popup-closed-by-user") {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+      } catch (redirectErr) {
+        console.error("Google 리다이렉트 로그인 실패:", redirectErr);
+        setStatus(`로그인 실패 (${redirectErr.code || redirectErr.message})`);
+      }
+      return;
+    }
+
+    console.error("Google 로그인 실패:", error);
+    setStatus(`로그인 실패 (${error.code || error.message})`);
+  }
+}
+
+async function handleSignOut() {
+  try {
+    await signOut(auth);
+    setStatus("로그아웃 되었습니다.");
+  } catch (error) {
+    console.error("로그아웃 실패:", error);
+    setStatus(`로그아웃 실패 (${error.code || error.message})`);
+  }
 }
 
 function toMillis(value) {
@@ -164,7 +165,6 @@ async function startListening() {
 async function addMemo(text) {
   await authReady;
   if (!auth.currentUser) {
-    createGoogleLoginButton();
     throw new Error("로그인이 필요합니다. Google 로그인 후 다시 시도해 주세요.");
   }
 
@@ -181,16 +181,25 @@ async function addMemo(text) {
 onAuthStateChanged(auth, (user) => {
   if (user) {
     authReadyResolve();
-    removeGoogleLoginButton();
+    updateAuthUi(true);
     setStatus(`로그인 상태: ${user.displayName ?? user.email ?? "Google 사용자"}`);
     startListening();
   } else {
     authReadyResolve();
+    updateAuthUi(false);
     setStatus("Google 로그인 필요");
-    createGoogleLoginButton();
     isListening = false;
   }
 });
+
+loginBtn?.addEventListener("click", handleGoogleLogin);
+logoutBtn?.addEventListener("click", handleSignOut);
+
+getRedirectResult(auth).catch((error) => {
+  console.error("Google 리디렉트 결과 처리 실패:", error);
+});
+
+updateAuthUi(false);
 
 startListening();
 

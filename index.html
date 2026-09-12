@@ -61,6 +61,27 @@
       font-size: 14px;
       font-weight: 500;
     }
+    .auth-controls {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0 12px;
+    }
+    .auth-controls button {
+      border: none;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    #googleLoginBtn {
+      background: #1f6fff;
+      color: #fff;
+    }
+    #signOutBtn {
+      background: #e9eef7;
+      color: #243652;
+    }
     #writer { margin: 16px 0; }
     #writer textarea {
       width: min(640px, 100%);
@@ -137,6 +158,10 @@
     <h1>클래스 게시판</h1>
     <p class="notice">한 줄 글귀로 빠르게 남겨보세요. 저장은 Enter, 줄바꿈은 Shift + Enter 입니다.</p>
     <div id="userArea">로그인 상태: 게스트</div>
+    <div class="auth-controls">
+      <button id="googleLoginBtn" type="button">Google 로그인</button>
+      <button id="signOutBtn" type="button">로그아웃</button>
+    </div>
 
     <div id="writer">
       <textarea id="input" rows="3" placeholder="새 메모를 입력하세요"></textarea>
