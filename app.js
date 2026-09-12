@@ -236,11 +236,16 @@ async function addMemo(text) {
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     const role = getUserRoleFromAuth(user);
+    const uid = user.uid || "";
+    const email = (user.email || "").toLowerCase();
     currentRole = role;
     currentUserUid = user.uid;
     authReadyResolve();
     updateAuthUi(true);
-    setStatus(`로그인 상태: ${user.displayName ?? user.email ?? "Google 사용자"} (${role})`);
+    setStatus(`로그인 상태: ${user.displayName ?? email ?? "Google 사용자"} (${role})`);
+    if (role !== "teacher") {
+      setStatus(`로그인 상태: ${user.displayName ?? email ?? "Google 사용자"} (${role}) / uid:${uid}`);
+    }
   } else {
     authReadyResolve();
     updateAuthUi(false);
