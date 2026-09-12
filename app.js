@@ -16,6 +16,7 @@ import {
   deleteDoc,
   doc,
   onSnapshot,
+  getDocs,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
@@ -43,6 +44,7 @@ const loginBtn = document.getElementById("googleLoginBtn");
 const logoutBtn = document.getElementById("signOutBtn");
 let isListening = false;
 let memoUnsubscribe = null;
+let legacyChecked = false;
 let authReadyResolve = null;
 let currentRole = "student";
 let currentUserUid = "";
@@ -133,7 +135,13 @@ function makeMemo(memoDoc) {
 function render(snapshot) {
   if (!wall) return;
 
-  const docs = snapshot.docs
+  renderFromDocs(snapshot.docs);
+}
+
+function renderFromDocs(docs) {
+  if (!wall) return;
+
+  const list = [...docs]
     .slice()
     .sort((a, b) => {
       const t1 = toMillis(a.data().createdAt);
@@ -142,9 +150,26 @@ function render(snapshot) {
     });
 
   wall.innerHTML = "";
-  docs.forEach((memoDoc) => {
+  list.forEach((memoDoc) => {
     wall.appendChild(makeMemo(memoDoc));
   });
+}
+
+async function loadLegacyMemoIfEmpty(snapshot) {
+  if (legacyChecked) return;
+  legacyChecked = true;
+
+  try {
+    const legacySnap = await getDocs(collection(db, "memo"));
+    if (legacySnap.empty) return;
+
+    const merged = [...snapshot.docs, ...legacySnap.docs];
+    if (merged.length === 0) return;
+    setStatus("Firebase 연결 완료 (기존 memo 컬렉션도 표시)");
+    renderFromDocs(merged);
+  } catch (error) {
+    console.error("기존 memo 컬렉션 조회 실패:", error);
+  }
 }
 
 async function startListening() {
@@ -153,8 +178,10 @@ async function startListening() {
     memoUnsubscribe = onSnapshot(
       collection(db, "memos"),
       (snapshot) => {
+        console.debug("memos 구독 문서 수:", snapshot.size);
         if (snapshot.empty) {
           setStatus("메모가 없습니다.");
+          loadLegacyMemoIfEmpty(snapshot);
         } else {
           setStatus("Firebase 연결 완료");
         }
