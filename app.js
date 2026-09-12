@@ -36,6 +36,10 @@ const wall = document.getElementById("wall");
 const input = document.getElementById("input");
 const userArea = document.getElementById("userArea");
 let isListening = false;
+let authReadyResolve = null;
+const authReady = new Promise((resolve) => {
+  authReadyResolve = resolve;
+});
 
 function createGoogleLoginButton() {
   if (document.getElementById("googleLoginBtn")) return;
@@ -157,8 +161,10 @@ async function startListening() {
 }
 
 async function addMemo(text) {
+  await authReady;
   if (!auth.currentUser) {
-    throw new Error("로그인이 필요합니다.");
+    createGoogleLoginButton();
+    throw new Error("로그인이 필요합니다. Google 로그인 후 다시 시도해 주세요.");
   }
 
   await addDoc(collection(db, "memos"), {
@@ -169,10 +175,12 @@ async function addMemo(text) {
 
 onAuthStateChanged(auth, (user) => {
   if (user) {
+    authReadyResolve();
     removeGoogleLoginButton();
     setStatus(`로그인 상태: ${user.displayName ?? user.email ?? "Google 사용자"}`);
     startListening();
   } else {
+    authReadyResolve();
     setStatus("Google 로그인 필요");
     createGoogleLoginButton();
     isListening = false;
@@ -197,6 +205,14 @@ input?.addEventListener("keydown", async (e) => {
   } catch (error) {
     input.value = backup;
     console.error("메모 저장 실패:", error);
+    if (error.code === "permission-denied") {
+      setStatus("저장 실패: Firestore 쓰기 권한 없음(규칙/배포 확인)");
+      return;
+    }
+    if (error.message === "로그인이 필요합니다. Google 로그인 후 다시 시도해 주세요.") {
+      setStatus(error.message);
+      return;
+    }
     setStatus(`저장 실패 (${error.code || error.message})`);
   }
 
