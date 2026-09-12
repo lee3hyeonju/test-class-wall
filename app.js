@@ -239,12 +239,9 @@ onAuthStateChanged(auth, async (user) => {
     authReadyResolve();
     updateAuthUi(true);
     setStatus(`로그인 상태: ${user.displayName ?? user.email ?? "Google 사용자"} (${role})`);
-    startListening();
   } else {
     authReadyResolve();
     updateAuthUi(false);
-    stopListening();
-    clearWall();
     setStatus("Google 로그인 필요");
     if (input) input.value = "";
   }
