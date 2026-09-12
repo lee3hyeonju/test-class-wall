@@ -34,6 +34,7 @@ const analytics = getAnalytics(app);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
+const TEACHER_UIDS = new Set(["TEACHER_UID_1", "TEACHER_UID_2"]);
 
 const wall = document.getElementById("wall");
 const input = document.getElementById("input");
@@ -43,12 +44,20 @@ const logoutBtn = document.getElementById("signOutBtn");
 let isListening = false;
 let memoUnsubscribe = null;
 let authReadyResolve = null;
+let currentRole = "student";
+let currentUserUid = "";
 const authReady = new Promise((resolve) => {
   authReadyResolve = resolve;
 });
 
 function setStatus(message) {
   if (userArea) userArea.textContent = message;
+}
+
+function getUserRoleFromAuth(user) {
+  if (!user) return "guest";
+  if (TEACHER_UIDS.has(user.uid)) return "teacher";
+  return "student";
 }
 
 function updateAuthUi(isSignedIn) {
@@ -191,14 +200,18 @@ async function addMemo(text) {
   await addDoc(collection(db, "memos"), {
     text,
     createdAt: serverTimestamp(),
+    ownerUid: auth.currentUser.uid,
   });
 }
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (user) {
+    const role = getUserRoleFromAuth(user);
+    currentRole = role;
+    currentUserUid = user.uid;
     authReadyResolve();
     updateAuthUi(true);
-    setStatus(`로그인 상태: ${user.displayName ?? user.email ?? "Google 사용자"}`);
+    setStatus(`로그인 상태: ${user.displayName ?? user.email ?? "Google 사용자"} (${role})`);
     startListening();
   } else {
     authReadyResolve();

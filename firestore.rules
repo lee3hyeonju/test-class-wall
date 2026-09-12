@@ -1,19 +1,35 @@
-﻿rules_version = '2';
+rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
     match /memos/{memoId} {
-      allow read: if true;
-      allow create: if request.auth != null &&
-        request.resource.data.keys().hasOnly(['text', 'createdAt'])
-        && request.resource.data.text is string
-        && request.resource.data.text.size() >= 5
-        && request.resource.data.text.size() <= 50
-        && request.resource.data.createdAt is timestamp
-        && request.resource.data.createdAt == request.time;
+      function isTeacher() {
+        return request.auth != null && (
+          request.auth.token.role == "teacher" ||
+          request.auth.uid in ["TEACHER_UID_1", "TEACHER_UID_2"]
+        );
+      }
 
-      allow update: if false;
-      allow delete: if request.auth != null;
+      function isStudent() {
+        return request.auth != null && !isTeacher();
+      }
+
+      allow read: if true;
+
+      allow create: if isTeacher() ||
+        (
+          isStudent() &&
+          request.resource.data.keys().hasOnly(['text', 'createdAt', 'ownerUid']) &&
+          request.resource.data.text is string &&
+          request.resource.data.text.size() >= 5 &&
+          request.resource.data.text.size() <= 50 &&
+          request.resource.data.createdAt is timestamp &&
+          request.resource.data.createdAt == request.time &&
+          request.resource.data.ownerUid == request.auth.uid
+        );
+
+      allow update: if isTeacher();
+      allow delete: if isTeacher();
     }
 
     match /{document=**} {
