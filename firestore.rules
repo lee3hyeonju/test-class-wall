@@ -6,7 +6,8 @@ service cloud.firestore {
       function isTeacher() {
         return request.auth != null && (
           request.auth.token.role == "teacher" ||
-          request.auth.uid in ["TEACHER_UID_1", "TEACHER_UID_2"]
+          request.auth.uid in ["TEACHER_UID_1", "TEACHER_UID_2"] ||
+          request.auth.token.email in ["TEACHER_EMAIL_1", "TEACHER_EMAIL_2"]
         );
       }
 

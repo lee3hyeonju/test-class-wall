@@ -36,6 +36,7 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 const TEACHER_UIDS = new Set(["TEACHER_UID_1", "TEACHER_UID_2"]);
+const TEACHER_EMAILS = new Set(["TEACHER_EMAIL_1", "TEACHER_EMAIL_2"]);
 
 const wall = document.getElementById("wall");
 const input = document.getElementById("input");
@@ -59,6 +60,7 @@ function setStatus(message) {
 function getUserRoleFromAuth(user) {
   if (!user) return "guest";
   if (TEACHER_UIDS.has(user.uid)) return "teacher";
+  if (TEACHER_EMAILS.has((user.email || "").toLowerCase())) return "teacher";
   return "student";
 }
 
