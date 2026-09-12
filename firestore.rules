@@ -4,7 +4,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /memos/{memoId} {
       allow read: if true;
-      allow create: if request.resource.data.keys().hasOnly(['text', 'createdAt'])
+      allow create: if request.auth != null &&
+        request.resource.data.keys().hasOnly(['text', 'createdAt'])
         && request.resource.data.text is string
         && request.resource.data.text.size() >= 5
         && request.resource.data.text.size() <= 50
