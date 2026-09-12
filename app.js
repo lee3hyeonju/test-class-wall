@@ -41,6 +41,7 @@ const userArea = document.getElementById("userArea");
 const loginBtn = document.getElementById("googleLoginBtn");
 const logoutBtn = document.getElementById("signOutBtn");
 let isListening = false;
+let memoUnsubscribe = null;
 let authReadyResolve = null;
 const authReady = new Promise((resolve) => {
   authReadyResolve = resolve;
@@ -140,7 +141,7 @@ function render(snapshot) {
 async function startListening() {
   if (isListening) return;
   try {
-    onSnapshot(
+    memoUnsubscribe = onSnapshot(
       collection(db, "memos"),
       (snapshot) => {
         if (snapshot.empty) {
@@ -160,6 +161,21 @@ async function startListening() {
     console.error("Firestore 초기화 실패:", error);
     setStatus("Firestore 연결 실패: 설정 또는 보안 규칙을 확인해 주세요.");
   }
+}
+
+function stopListening() {
+  if (memoUnsubscribe) {
+    memoUnsubscribe();
+    memoUnsubscribe = null;
+  }
+  isListening = false;
+}
+
+function clearWall() {
+  if (wall) {
+    wall.innerHTML = "";
+  }
+  setStatus("메모가 비어 있습니다.");
 }
 
 async function addMemo(text) {
@@ -187,8 +203,10 @@ onAuthStateChanged(auth, (user) => {
   } else {
     authReadyResolve();
     updateAuthUi(false);
+    stopListening();
+    clearWall();
     setStatus("Google 로그인 필요");
-    isListening = false;
+    if (input) input.value = "";
   }
 });
 
