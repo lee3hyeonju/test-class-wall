@@ -14,6 +14,7 @@ import {
   deleteDoc,
   doc,
   onSnapshot,
+  serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -167,9 +168,13 @@ async function addMemo(text) {
     throw new Error("로그인이 필요합니다. Google 로그인 후 다시 시도해 주세요.");
   }
 
+  if (text.length < 5 || text.length > 50) {
+    throw new Error("메모는 5자 이상 50자 이하로 입력해 주세요.");
+  }
+
   await addDoc(collection(db, "memos"), {
     text,
-    createdAt: Date.now(),
+    createdAt: serverTimestamp(),
   });
 }
 
