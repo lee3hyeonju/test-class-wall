@@ -115,17 +115,19 @@ async function addMemo(text) {
   });
 }
 
+startListening();
+
 onAuthStateChanged(auth, (user) => {
   if (user) {
     setStatus(`로그인 상태: ${user.isAnonymous ? "게스트" : "사용자"}`);
-    startListening();
-  } else {
-    setStatus("로그인 처리 중...");
-    signInAnonymously(auth).catch((error) => {
-      console.error("익명 로그인 실패:", error);
-      setStatus(`로그인 실패 (${error.code || error.message})`);
-    });
+    return;
   }
+
+  setStatus("로그인 처리 중...");
+  signInAnonymously(auth).catch((error) => {
+    console.error("익명 로그인 실패:", error);
+    setStatus(`로그인 실패 (${error.code || error.message})`);
+  });
 });
 
 input?.addEventListener("keydown", async (e) => {
