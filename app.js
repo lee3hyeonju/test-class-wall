@@ -36,7 +36,7 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 const TEACHER_UIDS = new Set(["TEACHER_UID_1"]);
-const TEACHER_EMAILS = new Set(["TEACHER_EMAIL_1"]);
+const TEACHER_EMAILS = new Set(["lee3hyeonju@gmail.com"]);
 
 const wall = document.getElementById("wall");
 const input = document.getElementById("input");
